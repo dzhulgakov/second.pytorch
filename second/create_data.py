@@ -13,8 +13,8 @@ def kitti_data_prep(root_path):
     kitti_ds.create_reduced_point_cloud(root_path)
     create_groundtruth_database("KittiDataset", root_path, Path(root_path) / "kitti_infos_train.pkl")
 
-def nuscenes_data_prep(root_path, version, dataset_name, max_sweeps=10):
-    nu_ds.create_nuscenes_infos(root_path, version=version, max_sweeps=max_sweeps)
+def nuscenes_data_prep(root_path, version, dataset_name, max_sweeps=10, truncate_to=None):
+    nu_ds.create_nuscenes_infos(root_path, version=version, max_sweeps=max_sweeps, truncate_to=truncate_to)
     name = "infos_train.pkl"
     if version == "v1.0-test":
         name = "infos_test.pkl"

@@ -68,9 +68,9 @@ def build_network(model_cfg, measure_time=False):
     return net
 
 def _worker_init_fn(worker_id):
-    time_seed = np.array(time.time(), dtype=np.int32)
+    time_seed = np.array(1337, dtype=np.int32)
     np.random.seed(time_seed + worker_id)
-    print(f"WORKER {worker_id} seed:", np.random.get_state()[1][0])
+    print(f"WORKER {worker_id} (PID {os.getpid()} seed:", np.random.get_state()[1][0])
 
 def freeze_params(params: dict, include: str=None, exclude: str=None):
     assert isinstance(params, dict)
@@ -140,9 +140,19 @@ def train(config_path,
           freeze_exclude=None,
           multi_gpu=False,
           measure_time=False,
-          resume=False):
+          resume=False,
+          debug_out_file=None):
     """train a VoxelNet model specified by a config file.
     """
+
+    # Make all randomness deterministic
+    import random
+    random.seed(1337)
+    torch.manual_seed(1337)
+    np.random.seed(1337)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     model_dir = str(Path(model_dir).resolve())
@@ -288,6 +298,8 @@ def train(config_path,
     steps_per_eval = train_cfg.steps_per_eval
     clear_metrics_every_epoch = train_cfg.clear_metrics_every_epoch
 
+    to_be_saved=[]
+
     amp_optimizer.zero_grad()
     step_times = []
     step = start_step
@@ -301,10 +313,15 @@ def train(config_path,
                 example.pop("metrics")
                 example_torch = example_convert_to_torch(example, float_dtype)
 
+                #to_be_saved = example['voxels']
+
                 batch_size = example["anchors"].shape[0]
 
                 ret_dict = net_parallel(example_torch)
                 cls_preds = ret_dict["cls_preds"]
+
+                to_be_saved = cls_preds.detach().clone()
+
                 loss = ret_dict["loss"].mean()
                 cls_loss_reduced = ret_dict["cls_loss_reduced"].mean()
                 loc_loss_reduced = ret_dict["loc_loss_reduced"].mean()
@@ -321,6 +338,13 @@ def train(config_path,
                 else:
                     loss.backward()
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 10.0)
+
+                #def wr(x):
+                #    if x is None:
+                #        return torch.tensor([])
+                #    return x
+                #to_be_saved.append([wr(x.grad).clone().detach() for x in net.parameters()])
+
                 amp_optimizer.step()
                 amp_optimizer.zero_grad()
                 net.update_global_step()
@@ -428,6 +452,8 @@ def train(config_path,
         model_logging.close()
     torchplus.train.save_models(model_dir, [net, amp_optimizer],
                                 net.get_global_step())
+    if debug_out_file:
+        torch.save(to_be_saved, debug_out_file)
 
 
 def evaluate(config_path,

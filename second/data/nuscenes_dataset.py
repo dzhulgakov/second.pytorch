@@ -714,7 +714,7 @@ def _fill_trainval_infos(nusc,
     return train_nusc_infos, val_nusc_infos
 
 
-def create_nuscenes_infos(root_path, version="v1.0-trainval", max_sweeps=10):
+def create_nuscenes_infos(root_path, version="v1.0-trainval", max_sweeps=10, truncate_to=None):
     from nuscenes.nuscenes import NuScenes
     nusc = NuScenes(version=version, dataroot=root_path, verbose=True)
     from nuscenes.utils import splits
@@ -739,6 +739,10 @@ def create_nuscenes_infos(root_path, version="v1.0-trainval", max_sweeps=10):
     train_scenes = list(
         filter(lambda x: x in available_scene_names, train_scenes))
     val_scenes = list(filter(lambda x: x in available_scene_names, val_scenes))
+    if truncate_to is not None:
+        train_scenes = train_scenes[:truncate_to]
+        val_scenes = val_scenes[:truncate_to]
+        print("========== TRUNCATED =============")
     train_scenes = set([
         available_scenes[available_scene_names.index(s)]["token"]
         for s in train_scenes
