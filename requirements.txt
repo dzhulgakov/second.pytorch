@@ -1,0 +1,10 @@
+fire
+tensorboardX
+protobuf
+opencv-python
+numba
+scikit-image
+scipy
+pillow
+seaborn
+psutil
