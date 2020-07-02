@@ -38,6 +38,21 @@ def change_default_args(**kwargs):
                 for key, val in kwargs.items():
                     if key not in kw and kw_to_pos[key] > len(args):
                         kw[key] = val
+                args = list(args)
+                for i,x in enumerate(args):
+                    if type(x) == np.int64:
+                        print("!!! converted argument from numpy")
+                        args[i] = int(x)
+                    if type(x) == np.bool_:
+                        print("!!! converted argument from numpy")
+                        args[i] = bool(x)
+                for i,x in kw.items():
+                    if type(x) == np.int64:
+                        print("!!! converted argument from numpy")
+                        kw[i] = int(x)
+                    if type(x) == np.bool_:
+                        print("!!! converted argument from numpy")
+                        args[i] = bool(x)
                 super().__init__(*args, **kw)
 
         return DefaultArgLayer

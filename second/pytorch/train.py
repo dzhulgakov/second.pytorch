@@ -210,6 +210,9 @@ def train(config_path,
         freeze_params_v2(dict(net.named_parameters()), freeze_include, freeze_exclude)
         net.clear_global_step()
         net.clear_metrics()
+
+    net=torch.jit.script(net)
+
     if multi_gpu:
         net_parallel = torch.nn.DataParallel(net)
     else:
@@ -317,7 +320,12 @@ def train(config_path,
 
                 batch_size = example["anchors"].shape[0]
 
+                import pdb
+                pdb.set_trace()
+
+                tm = time.time()
                 ret_dict = net_parallel(example_torch)
+                print('%%% forward in secs', time.time()-tm)
                 cls_preds = ret_dict["cls_preds"]
 
                 to_be_saved = cls_preds.detach().clone()

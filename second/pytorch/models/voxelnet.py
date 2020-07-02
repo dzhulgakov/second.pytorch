@@ -369,8 +369,8 @@ class VoxelNet(nn.Module):
             return self.loss(example, preds_dict)
         else:
             self.start_timer("predict")
-            with torch.no_grad():
-                res = self.predict(example, preds_dict)
+            #with torch.no_grad():
+            res = self.predict(example, preds_dict)
             self.end_timer("predict")
             return res
 
